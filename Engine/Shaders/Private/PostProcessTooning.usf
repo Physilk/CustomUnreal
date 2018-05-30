@@ -1,0 +1,61 @@
+
+#include "/Engine/Public/Platform.ush"
+#include "/Engine/Private/MonteCarlo.ush"
+
+#include "Common.ush"
+#include "PostProcessCommon.ush"
+#include "DeferredShadingCommon.ush"
+
+#include "/Engine/Private/PostProcessCommon.ush"
+
+float3 SceneDiffuseLookup(float2 UV)
+{
+	#if SCENE_TEXTURES_DISABLED
+		return float3(0.0f, 0.0f, 0.0f);
+	#endif
+	FScreenSpaceData ScreenSpaceData = GetScreenSpaceData(UV);
+	return ScreenSpaceData.GBuffer.DiffuseColor;
+}
+
+float SampleShadow1D(float u)
+{
+	if (u < 0.75)
+	{
+		return 1;
+	}
+	if (u < 0.90)
+	{
+		return 0.65;
+	}
+	return 0.90;
+}
+
+float colorSteps;
+
+void MainTooningPS(
+	noperspective float4 UVAndScreenPos : TEXCOORD0,
+	float4 SvPosition : SV_POSITION, 
+	out float4 OutColor : SV_Target0)
+{
+	float colorStepsBis = 7;
+	float2 UV = UVAndScreenPos.xy;
+	float4 SceneTexture = Texture2DSample(PostprocessInput0, PostprocessInput0Sampler, UV);
+	float4 diffuse = float4(SceneDiffuseLookup(UV), 1);
+	float4 lightning = saturate(SceneTexture / diffuse);
+	lightning = saturate(lightning * 2 );
+	float shadow = SampleShadow1D(lightning.r);
+	
+	float4 mult = lightning * colorStepsBis;
+	float4 rounded = ceil(mult);
+	float sampleValue = 1 / colorStepsBis;
+	float4 lightning_sampled = rounded * sampleValue;
+	float lightning_sampled_float = max(max(lightning_sampled.r, lightning_sampled.g), lightning_sampled.b);
+	
+	float4 output = lightning_sampled_float * max(diffuse, SceneTexture);
+	//float delta = 0.001;
+	//if (output.r < delta && output.g < delta && output.g < delta)
+	//{
+	//	output = lightning_sampled_float * SceneTexture;
+	//}
+    OutColor = output;//SceneTexture * sampleValue;
+}

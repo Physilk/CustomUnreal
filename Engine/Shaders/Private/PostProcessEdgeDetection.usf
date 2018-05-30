@@ -1,0 +1,203 @@
+#include "/Engine/Public/Platform.ush"
+#include "/Engine/Private/MonteCarlo.ush"
+//#include "/Engine/Private/PaniniProjection.ush"
+#include "Common.ush"
+#include "PostProcessCommon.ush"
+#include "DeferredShadingCommon.ush"		// FGBufferData
+
+#if POST_PROCESS_MATERIAL
+    // only Postprocess material bind PostprocessInput0, PostprocessInput0Size, PostprocessInput0MinMax ...
+    #include "/Engine/Private/PostProcessCommon.ush"            // PostprocessInput0
+#endif
+
+float3 SceneNormalLookup(float2 UV)
+{
+	#if SCENE_TEXTURES_DISABLED
+		return float4(0.0f, 0.0f, 0.0f, 0.0f);
+	#endif
+	FScreenSpaceData ScreenSpaceData = GetScreenSpaceData(UV);
+	return ScreenSpaceData.GBuffer.WorldNormal.xyz;
+}
+
+float SceneDepthLookup(float2 UV)
+{
+	#if SCENE_TEXTURES_DISABLED
+		return 0;
+	#endif
+	FScreenSpaceData ScreenSpaceData = GetScreenSpaceData(UV);
+	return ScreenSpaceData.GBuffer.Depth;
+}
+
+#if EDGE_DETECTION_USE_NORMALS
+float FindSmallestDotProductArround(float2 UV, int sizeX, int sizeY, float2 offset, float2 scale)
+{
+	//offset added to all uvs to get from the center to the corner
+	MaterialFloat2 baseOffset = MaterialFloat2(-sizeX/2.0f, -sizeY/2.0f) * offset.rg;
+	//sample the world normal from the GBuffer
+	float3 baseNormal = SceneNormalLookup(UV);
+	//dot product for two normalized vectors ranges between -1.0f to 1.0f
+	//we're going to search the smallest value so initialize to something larger
+	float minDot = 10.0f;
+
+	for (int i = 0; i < sizeX; ++i)
+	{
+		for (int j = 0; j < sizeY; ++j)
+		{
+			//calucalte clamped uvs
+			float2 uvs = min(max(UV + baseOffset * scale + i * offset.r * scale.r * float2(1.0, 0.0f) + j * offset.g * scale.g * float2(0.0, 1.0f), float2(0.0f, 0.0f)), float2(1.0f, 1.0f));
+			//sample world normal from the GBuffer at the new position
+			float newDot = dot(baseNormal, SceneNormalLookup(uvs));
+			//if smaller than our current value
+			if (newDot < minDot)
+			{
+				//use the new value
+				minDot = newDot;
+			}
+		}
+	}
+
+	//return smallest dot product in this region
+	return minDot;
+}
+#endif
+
+#if EDGE_DETECTION_USE_DEPTH
+float FindhighestDepthArround(float2 UV, int sizeX, int sizeY, float2 offset, float2 scale)
+{
+	//offset added to all uvs to get from the center to the corner
+	MaterialFloat2 baseOffset = MaterialFloat2(-sizeX/2.0f, -sizeY/2.0f) * offset.rg;
+	//sample the world depth from the GBuffer
+	float baseDepth = SceneDepthLookup(UV);
+	float maxDepth = 0.0f;
+
+	for (int i = 0; i < sizeX; ++i)
+	{
+		for (int j = 0; j < sizeY; ++j)
+		{
+			//calucalte clamped uvs
+			float2 uvs = min(max(UV + baseOffset * scale + i * offset.r * scale.r * float2(1.0, 0.0f) + j * offset.g * scale.g * float2(0.0, 1.0f), float2(0.0f, 0.0f)), float2(1.0f, 1.0f));
+			//sample depth from the GBuffer at the new position
+			float newDepth = abs(baseDepth - SceneDepthLookup(uvs));
+			//if higher than our current value
+			if (maxDepth < newDepth)
+			{
+				//use the new value
+				maxDepth = newDepth;
+			}
+		}
+	}
+
+	//return smallest dot product in this region
+	return maxDepth;
+}
+
+float GetDepthThreshold(float2 UV)
+{
+	float depth = SceneDepthLookup(UV);
+	return depth * 0.5;
+}
+#endif
+
+float4 SobelEdgeDetection(int2 pixelPos)
+{
+	// X directional search matrix.
+	float3x3 GX = float3x3( float3(-1, -2, -1), float3(0,0,0), float3(1,2,1));
+    // Y directional search matrix.
+	float3x3 GY = float3x3( float3(1, 0, -1), float3(2,0,-2), float3(1,0,-1));
+
+    float4  fSumX = float4( 0.0,0.0,0.0,0.0 );
+    float4  fSumY = float4( 0.0,0.0,0.0,0.0 );
+    float4 fTotalSum = float4( 0.0,0.0,0.0,0.0 );
+
+    // Findout X , Y index of incoming pixel
+    int fXIndex = pixelPos.x;
+    int fYIndex = pixelPos.y;
+	int fHeight = View.ViewSizeAndInvSize.g;
+	int fWidth = View.ViewSizeAndInvSize.r;
+
+    /* image boundaries Top, Bottom, Left, Right pixels*/
+    if( ! ( fYIndex < 1.0 || fYIndex > fHeight - 1.0 || 
+            fXIndex < 1.0 || fXIndex > fWidth - 1.0 ))
+    {
+        // X Directional Gradient calculation.
+        for(float I=-1.0; I<=1.0; I = I + 1.0)
+        {
+            for(float J=-1.0; J<=1.0; J = J + 1.0)
+            {
+                float fTempX = ( fXIndex + I + 0.5 ) / fWidth ;
+                float fTempY = ( fYIndex + J + 0.5 ) / fHeight ;
+                float4 fTempSumX = Texture2DSample(PostprocessInput0, PostprocessInput0Sampler, float2(fTempX, fTempY));
+				
+                fSumX = fSumX + ( fTempSumX * float4( GX[int(I+1.0)][int(J+1.0)],
+                                                    GX[int(I+1.0)][int(J+1.0)],
+                                                    GX[int(I+1.0)][int(J+1.0)],
+                                                    GX[int(I+1.0)][int(J+1.0)]));
+            }
+        }
+
+        { // Y Directional Gradient calculation.
+            for(float I=-1.0; I<=1.0; I = I + 1.0)
+            {
+                for(float J=-1.0; J<=1.0; J = J + 1.0)
+                {
+                    float fTempX = ( fXIndex + I + 0.5 ) / fWidth ;
+                    float fTempY = ( fYIndex + J + 0.5 ) / fHeight ;
+                    float4 fTempSumY = Texture2DSample(PostprocessInput0, PostprocessInput0Sampler, float2(fTempX, fTempY));
+                    fSumY = fSumY + ( fTempSumY * float4( GY[int(I+1.0)][int(J+1.0)],
+                                                        GY[int(I+1.0)][int(J+1.0)],
+                                                        GY[int(I+1.0)][int(J+1.0)],
+                                                        GY[int(I+1.0)][int(J+1.0)]));
+                }
+            }
+            // Combine X Directional and Y Directional Gradient.
+            float4 fTem = fSumX * fSumX + fSumY * fSumY;
+            fTotalSum = sqrt( fTem );
+        }
+    }
+	return fTotalSum;
+}
+
+void MainEdgeDetectionPS(
+	noperspective float4 UVAndScreenPos : TEXCOORD0,
+	float4 SvPosition : SV_POSITION, 
+	out float4 OutColor : SV_Target0)
+{
+	float2 UV = UVAndScreenPos.xy;
+	
+#if EDGE_DETECTION_USE_NORMALS 
+	float2 offsetScale_n = float2(0.5, 0.5);
+	float2 offset_n = View.ViewSizeAndInvSize.ba;
+	float edgeThreshold = 0.7;
+	
+	float minDot = FindSmallestDotProductArround(UV, 5, 5, offset_n, offsetScale_n);
+#endif
+#if EDGE_DETECTION_USE_DEPTH
+	float2 offsetScale_d = float2(0.5, 0.5);
+	float2 offset_d = View.ViewSizeAndInvSize.ba;
+	float depthThreshold = GetDepthThreshold(UV);
+	
+	float maxDepth = FindhighestDepthArround(UV, 5, 5, offset_d, offsetScale_d);
+#endif
+	int2 PixelPos = (int2)SvPosition.xy;
+	float4 sobelValue = SobelEdgeDetection(PixelPos);
+	float sobelAverage = (sobelValue.r + sobelValue.g + sobelValue.b) / 3;
+	
+	
+	
+	
+	float4 multValue = float4(1, 1, 1, 1);
+#if EDGE_DETECTION_USE_NORMALS
+	if (minDot < edgeThreshold)
+	{
+		multValue = float4(0, 0, 0, 1);
+	}
+#endif
+#if EDGE_DETECTION_USE_DEPTH
+	if (depthThreshold < edgeThreshold)
+	{
+		multValue = float4(0, 0, 0, 1);
+	}
+#endif
+	float4 SceneTexture = Texture2DSample(PostprocessInput0, PostprocessInput0Sampler, UV);
+    OutColor = lerp(SceneTexture, float4(0,0,0,0), sobelAverage) * multValue;  
+}
