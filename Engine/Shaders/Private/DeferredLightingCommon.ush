@@ -13,6 +13,7 @@
 #include "MonteCarlo.ush"
 #include "IESLightProfilesCommon.ush"
 #include "ShadingModels.ush"
+#include "ToonShading.ush"
 
 /** 
  * Data about a single light.
@@ -504,10 +505,14 @@ float4 GetDynamicLighting(float3 WorldPosition, float3 CameraVector, FGBufferDat
 			// greatly reduces shadow mapping artifacts
 			// Commented out because it reduces character shading quality.
 			//SurfaceShadow *= saturate(dot(N, L) * 6 - 0.2);
-
+			//BRANCH
+			//if (ShadingModelID == SHADINGMODELID_TOON)
+			//{
+			//	SurfaceShadow *= saturate(dot(N, L) * 6 - 0.2);
+			//}
 #if SUPPORT_CONTACT_SHADOWS
 			BRANCH
-			if( LightData.ShadowedBits > 1 && LightData.ContactShadowLength > 0 )
+			if( LightData.ShadowedBits > 1 && LightData.ContactShadowLength > 0  && ShadingModelID != SHADINGMODELID_TOON)
 			{
 				float StepOffset = Dither - 0.5;
 				float Shadow = ShadowRayCast( WorldPosition + View.PreViewTranslation, L, LightData.ContactShadowLength * GBuffer.Depth, 8, StepOffset );
@@ -539,6 +544,24 @@ float4 GetDynamicLighting(float3 WorldPosition, float3 CameraVector, FGBufferDat
 		const bool bNeedsSeparateSubsurfaceLightAccumulation = GBuffer.ShadingModelID == SHADINGMODELID_SUBSURFACE_PROFILE;
 		const float3 LightColor = LightData.LightColorAndFalloffExponent.rgb;
 
+		// Toon Shading additions
+		//float3 Attenuation = 0;
+
+		//BRANCH
+		//if (ShadingModelID == SHADINGMODELID_TOON)
+		//{
+		//	float range = GBuffer.CustomData.x * 0.5;
+		//	//Attenuation = LightColor * ((DistanceAttenuation * LightRadiusMask * SpotFalloff) * smoothstep(0.5 - range, 0.5 + range, SurfaceShadow) * 0.1);
+		//	float Shadow = ((SurfaceShadow > 0) ? 1 : 0);
+		//	float ClampedBrightness = (DistanceAttenuation * LightRadiusMask * SpotFalloff > 0 ? 1 : 0);
+		//	Attenuation = LightColor * (saturate(ClampedBrightness) * Shadow * 0.1);
+		//}
+		//else
+		//{
+		//	Attenuation = LightColor * (NoL * SurfaceAttenuation);
+		//}
+		// Toon Shading additions end
+
 		#if NON_DIRECTIONAL_DIRECT_LIGHTING
 
 			float3 VolumeLighting = Diffuse_Lambert(GBuffer.DiffuseColor);
@@ -559,7 +582,15 @@ float4 GetDynamicLighting(float3 WorldPosition, float3 CameraVector, FGBufferDat
 				// accumulate surface
 				{
 					float3 SurfaceLighting = SurfaceShading(GBuffer, LobeRoughness, LobeEnergy, L, V, N, Random);
-					LightAccumulator_Add(LightAccumulator, SurfaceLighting, (1.0/PI), LightColor * (NoL * SurfaceAttenuation), bNeedsSeparateSubsurfaceLightAccumulation);
+					BRANCH
+					if (ShadingModelID != SHADINGMODELID_TOON)
+					{
+						LightAccumulator_Add(LightAccumulator, SurfaceLighting, (1.0/PI), LightColor * (NoL * SurfaceAttenuation), bNeedsSeparateSubsurfaceLightAccumulation);
+					}
+					else
+					{
+						LightAccumulator_Add(LightAccumulator, SurfaceLighting, (1.0/PI), LightColor * (Falloff_Toon_Stepped(NoL, GBuffer.CustomData) * SurfaceAttenuation), bNeedsSeparateSubsurfaceLightAccumulation);
+					}
 				}
 
 				// accumulate subsurface

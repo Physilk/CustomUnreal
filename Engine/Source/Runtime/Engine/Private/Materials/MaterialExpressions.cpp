@@ -4259,7 +4259,7 @@ int32 UMaterialExpressionMakeMaterialAttributes::Compile(class FMaterialCompiler
 	int32 Ret = INDEX_NONE;
 	UMaterialExpression* Expression = NULL;
 
- 	static_assert(MP_MAX == 29, 
+ 	static_assert(MP_MAX == 30, 
 		"New material properties should be added to the end of the inputs for this expression. \
 		The order of properties here should match the material results pins, the make material attriubtes node inputs and the mapping of IO indices to properties in GetMaterialPropertyFromInputOutputIndex().\
 		Insertions into the middle of the properties or a change in the order of properties will also require that existing data is fixed up in DoMaterialAttriubtesReorder().\
@@ -4283,6 +4283,7 @@ int32 UMaterialExpressionMakeMaterialAttributes::Compile(class FMaterialCompiler
 	case MP_SubsurfaceColor: Ret = SubsurfaceColor.Compile(Compiler); Expression = SubsurfaceColor.Expression; break;
 	case MP_CustomData0: Ret = ClearCoat.Compile(Compiler); Expression = ClearCoat.Expression; break;
 	case MP_CustomData1: Ret = ClearCoatRoughness.Compile(Compiler); Expression = ClearCoatRoughness.Expression; break;
+	case MP_CustomData2: Ret = ToonStepSize.Compile(Compiler); Expression = ToonStepSize.Expression; break;
 	case MP_AmbientOcclusion: Ret = AmbientOcclusion.Compile(Compiler); Expression = AmbientOcclusion.Expression; break;
 	case MP_Refraction: Ret = Refraction.Compile(Compiler); Expression = Refraction.Expression; break;
 	case MP_PixelDepthOffset: Ret = PixelDepthOffset.Compile(Compiler); Expression = PixelDepthOffset.Expression; break;
@@ -4331,7 +4332,7 @@ UMaterialExpressionBreakMaterialAttributes::UMaterialExpressionBreakMaterialAttr
 	MenuCategories.Add(ConstructorStatics.NAME_MaterialAttributes);
 #endif
 	
- 	static_assert(MP_MAX == 29, 
+ 	static_assert(MP_MAX == 30, 
 		"New material properties should be added to the end of the outputs for this expression. \
 		The order of properties here should match the material results pins, the make material attriubtes node inputs and the mapping of IO indices to properties in GetMaterialPropertyFromInputOutputIndex().\
 		Insertions into the middle of the properties or a change in the order of properties will also require that existing data is fixed up in DoMaterialAttriubtesReorder().\
@@ -4354,6 +4355,7 @@ UMaterialExpressionBreakMaterialAttributes::UMaterialExpressionBreakMaterialAttr
 	Outputs.Add(FExpressionOutput(TEXT("ClearCoatRoughness"), 1, 1, 0, 0, 0));
 	Outputs.Add(FExpressionOutput(TEXT("AmbientOcclusion"), 1, 1, 0, 0, 0));
 	Outputs.Add(FExpressionOutput(TEXT("Refraction"), 1, 1, 1, 0, 0));
+	Outputs.Add(FExpressionOutput(TEXT("ToonStepSize"), 1, 1, 1, 1, 0));
 
 	for (int32 UVIndex = 0; UVIndex <= MP_CustomizedUVs7 - MP_CustomizedUVs0; UVIndex++)
 	{
@@ -4431,6 +4433,7 @@ int32 UMaterialExpressionBreakMaterialAttributes::Compile(class FMaterialCompile
 		PropertyToIOIndexMap.Add(MP_CustomizedUVs6, 22);
 		PropertyToIOIndexMap.Add(MP_CustomizedUVs7, 23);
 		PropertyToIOIndexMap.Add(MP_PixelDepthOffset, 24);
+		PropertyToIOIndexMap.Add(MP_CustomData2, 25);
 	}
 
 	// Here we don't care about any multiplex index coming in.

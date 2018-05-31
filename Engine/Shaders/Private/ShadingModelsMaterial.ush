@@ -124,6 +124,12 @@ void SetGBufferForShadingModel(
 	#endif
 	GBuffer.CustomData.z = saturate( GetMaterialCustomData0(MaterialParameters) );	// Iris Mask
 	GBuffer.CustomData.w = saturate( GetMaterialCustomData1(MaterialParameters) );	// Iris Distance
+#elif MATERIAL_SHADINGMODEL_TOON
+	GBuffer.ShadingModelID = SHADINGMODELID_TOON;
+
+	GBuffer.CustomData.x = GetMaterialCustomData0(MaterialParameters); // Toon blend factor
+	GBuffer.CustomData.y = GetMaterialCustomData1(MaterialParameters); // Toon roughness
+	GBuffer.CustomData.z = clamp(GetMaterialCustomData2(MaterialParameters), 0.001, 1); // Toon step size (clamped to prevent divide by zero)
 #else
 	// missing shading model, compiler should report ShadingModelID is not set
 #endif

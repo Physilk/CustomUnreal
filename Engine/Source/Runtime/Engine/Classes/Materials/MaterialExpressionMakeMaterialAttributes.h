@@ -57,6 +57,9 @@ class UMaterialExpressionMakeMaterialAttributes : public UMaterialExpression
 	FExpressionInput ClearCoatRoughness;
 
 	UPROPERTY()
+	FExpressionInput ToonStepSize;
+
+	UPROPERTY()
 	FExpressionInput AmbientOcclusion;
 
 	UPROPERTY()

@@ -167,6 +167,7 @@ void Main(
 		half4 SSData = GetMaterialSubsurfaceDataRaw(PixelMaterialInputs);
 		float Custom0 = GetMaterialCustomData0(MaterialParameters);
 		float Custom1 = GetMaterialCustomData1(MaterialParameters);
+		float Custom2 = GetMaterialCustomData2(MaterialParameters);
 		float MaterialAO = GetMaterialAmbientOcclusionRaw(PixelMaterialInputs);
 		float PixelDepthOffset = GetMaterialPixelDepthOffset(PixelMaterialInputs);
 #if CLEAR_COAT_BOTTOM_NORMAL && NUM_MATERIAL_OUTPUTS_CLEARCOATBOTTOMNORMAL > 0

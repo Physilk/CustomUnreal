@@ -1657,6 +1657,11 @@ half GetMaterialCustomData1(FMaterialPixelParameters Parameters)
 %s;
 }
 
+half GetMaterialCustomData2(FMaterialPixelParameters Parameters)
+{
+%s;
+}
+
 half GetMaterialAmbientOcclusionRaw(FPixelMaterialInputs PixelMaterialInputs)
 {
 	return PixelMaterialInputs.AmbientOcclusion;

@@ -56,7 +56,8 @@ float3 StandardShading( float3 DiffuseColor, float3 SpecularColor, float3 LobeRo
 	NoV = saturate(abs(NoV) + 1e-5);
 
 	// Generalized microfacet specular
-	float D = D_GGX( LobeRoughness[1], NoH ) * LobeEnergy[1];
+	float D = LobeEnergy[1] * D_GGX(LobeRoughness[1], NoH);
+
 	float Vis = Vis_SmithJointApprox( LobeRoughness[1], NoV, NoL );
 	float3 F = F_Schlick( SpecularColor, VoH );
 
@@ -65,6 +66,23 @@ float3 StandardShading( float3 DiffuseColor, float3 SpecularColor, float3 LobeRo
 	//float3 Diffuse = Diffuse_OrenNayar( DiffuseColor, LobeRoughness[1], NoV, NoL, VoH );
 
 	return Diffuse * LobeEnergy[2] + (D * Vis) * F;
+}
+
+// Toon Shading addition
+float3 ToonShading( FGBufferData GBuffer, float3 LobeRoughness, float3 LobeEnergy, float3 L, float3 V, half3 N)
+{
+	// float range = GBuffer.CustomData.x * 0.5;
+	float HighlightSize = 0.5; // GBuffer.CustomData.y;
+	float3 H = normalize(V+L);
+	float NoH = saturate( dot(N, H) );
+	float NoL = saturate( dot(N, L) );
+
+	//return GBuffer.DiffuseColor + saturate(smoothstep(0.5 - range, 0.5 + range, D_GGX(LobeRoughness[1], NoH )) * LobeEnergy[1]);
+	float Highlight = (NoH > (1 - GBuffer.Roughness)) ? 1 : 0;
+	float3 HighlightColor = ( Highlight * (1 - GBuffer.Roughness) ) * lerp(1, GBuffer.BaseColor, GBuffer.Metallic);
+	//float3 Diff =  lerp(GBuffer.CustomData.rgb, GBuffer.BaseColor, saturate( floor( NoL * GBuffer.CustomData.a ) / GBuffer.CustomData.a ));
+	float Diff = saturate( ceil( NoH));// saturate ( ceil ( NoL * 2 ) / 2 );
+	return saturate(GBuffer.BaseColor * Diff) + HighlightColor;
 }
 
 float3 SimpleShading( float3 DiffuseColor, float3 SpecularColor, float Roughness, float3 L, float3 V, half3 N )
@@ -728,6 +746,8 @@ float3 SurfaceShading( FGBufferData GBuffer, float3 LobeRoughness, float3 LobeEn
 			return ClothShading( GBuffer, LobeRoughness, LobeEnergy, L, V, N );
 		case SHADINGMODELID_EYE:
 			return EyeShading( GBuffer, LobeRoughness, LobeEnergy, L, V, N );
+		case SHADINGMODELID_TOON:
+			return ToonShading( GBuffer, LobeRoughness, LobeEnergy, L, V, N );
 		default:
 			return 0;
 	}

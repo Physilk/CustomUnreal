@@ -69,6 +69,17 @@ float3 Diffuse_Gotanda( float3 DiffuseColor, float Roughness, float NoV, float N
 #endif
 }
 
+// Flattened version of D_Blinn for Toon shading model
+float D_Toon_Flat(float Roughness, float ToonRoughness, float NoH)
+{
+	float a = Roughness * Roughness;
+	float a2 = a * a;
+	float b = 1 - a2;
+	float c = 1 / ToonRoughness;
+	float n = 2 / a2 - 2;
+	return (n + 2) / (2 * PI) * saturate(((NoH - b) / a) * c);
+}
+
 // [Blinn 1977, "Models of light reflection for computer synthesized pictures"]
 float D_Blinn( float Roughness, float NoH )
 {

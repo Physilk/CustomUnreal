@@ -1579,6 +1579,7 @@ void FMaterial::SetupMaterialEnvironment(
 		case MSM_Hair:				OutEnvironment.SetDefine(TEXT("MATERIAL_SHADINGMODEL_HAIR"),				TEXT("1")); break;
 		case MSM_Cloth:				OutEnvironment.SetDefine(TEXT("MATERIAL_SHADINGMODEL_CLOTH"),				TEXT("1")); break;
 		case MSM_Eye:				OutEnvironment.SetDefine(TEXT("MATERIAL_SHADINGMODEL_EYE"),					TEXT("1")); break;
+		case MSM_Toon:				OutEnvironment.SetDefine(TEXT("MATERIAL_SHADINGMODEL_TOON"),				TEXT("1")); break;
 		default:
 			UE_LOG(LogMaterial, Warning, TEXT("Unknown material shading model: %u  Setting to MSM_DefaultLit"),(int32)GetShadingModel());
 			OutEnvironment.SetDefine(TEXT("MATERIAL_SHADINGMODEL_DEFAULT_LIT"),TEXT("1"));
@@ -3032,6 +3033,7 @@ void FMaterialAttributeDefinitionMap::InitializeAttributeMap()
 	// Custom attributes
 	Add(FGuid(0x9E502E69, 0x3C8F48FA, 0x94645CFD, 0x28E5428D), TEXT("ClearCoat"),			MP_CustomData0, MCT_Float, FVector4(1,0,0,0), SF_Pixel);
 	Add(FGuid(0xBE4F2FFD, 0x12FC4296, 0xB0124EEA, 0x12C28D92), TEXT("ClearCoatRoughness"),	MP_CustomData1, MCT_Float, FVector4(.1,0,0,0), SF_Pixel);
+	Add(FGuid(0xD3C17C26, 0x0B4F4B9F, 0x9DECBAA3, 0x0EF88128), TEXT("ToonStepSize"),		MP_CustomData2, MCT_Float, FVector4(.1, 0, 0, 0), SF_Pixel);
 
 	// Lightmass attributes	
 	Add(FGuid(0x68934E1B, 0x70EB411B, 0x86DF5AA5, 0xDF2F626C), TEXT("DiffuseColor"),	MP_DiffuseColor,	MCT_Float3, FVector4(0,0,0,0), SF_Pixel, INDEX_NONE, bHideAttribute);

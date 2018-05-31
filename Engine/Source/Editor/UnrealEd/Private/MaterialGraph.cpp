@@ -47,6 +47,7 @@ void UMaterialGraph::RebuildGraph()
 		MaterialInputs.Add( FMaterialInputInfo( GetSubsurfacePinName(), MP_SubsurfaceColor, LOCTEXT( "SubsurfaceToolTip", "Allows you to add a color to your Material to simulate shifts in color when light passes through the surface" ) ) );
 		MaterialInputs.Add( FMaterialInputInfo( GetCustomDataPinName(0), MP_CustomData0, GetCustomDataPinName( 0 ) ) );
 		MaterialInputs.Add( FMaterialInputInfo( GetCustomDataPinName(1), MP_CustomData1, GetCustomDataPinName( 1 ) ) );
+		MaterialInputs.Add( FMaterialInputInfo( GetCustomDataPinName(2), MP_CustomData2, GetCustomDataPinName( 2 ) ) );
 		MaterialInputs.Add( FMaterialInputInfo( LOCTEXT("AmbientOcclusion", "Ambient Occlusion"), MP_AmbientOcclusion, LOCTEXT( "AmbientOcclusionToolTip", "Simulate the self-shadowing that happens within crevices of a surface" ) ) );
 		MaterialInputs.Add( FMaterialInputInfo( LOCTEXT("Refraction", "Refraction"), MP_Refraction, LOCTEXT( "RefractionToolTip", "Takes in a texture or value that simulates the index of refraction of the surface" ) ) );
 
@@ -538,6 +539,8 @@ FText UMaterialGraph::GetCustomDataPinName( uint32 Index ) const
 			return LOCTEXT("Cloth", "Cloth");
 		case MSM_Eye:
 			return LOCTEXT("IrisMask", "Iris Mask");
+		case MSM_Toon:
+			return LOCTEXT("ToonBlend", "Toon Blend");
 		default:
 			return LOCTEXT("CustomData0", "Custom Data 0");
 		}
@@ -550,9 +553,22 @@ FText UMaterialGraph::GetCustomDataPinName( uint32 Index ) const
 			return LOCTEXT("ClearCoatRoughness", "Clear Coat Roughness");
 		case MSM_Eye:
 			return LOCTEXT("IrisDistance", "Iris Distance");
+		case MSM_Toon:
+			return LOCTEXT("ToonRoughness", "Toon Roughness");
 		default:
 			return LOCTEXT("CustomData1", "Custom Data 1");
 		}
+	}
+	else if (Index == 2)
+	{
+		switch (Material->GetShadingModel())
+		{
+			case MSM_Toon:
+				return LOCTEXT("ToonStepSize", "Toon Step Size");
+			default:
+				return LOCTEXT("CustomData2", "Custom Data 2");
+		}
+
 	}
 
 	return LOCTEXT("CustomData", "Custom Data");	

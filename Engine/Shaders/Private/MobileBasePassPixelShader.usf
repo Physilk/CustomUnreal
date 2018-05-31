@@ -476,10 +476,18 @@ void Main(
 		float NoL = max(0, dot(float3(MaterialParameters.WorldNormal), float3(MobileDirectionalLight.DirectionalLightDirection)));
 		float RoL = max(0, dot(float3(MaterialParameters.ReflectionVector), float3(MobileDirectionalLight.DirectionalLightDirection)));
 
+		#if MATERIAL_SHADINGMODEL_TOON
+			NoL = Falloff_Toon_Flat(NoL);
+		#endif
+
 		#if FULLY_ROUGH
 			Color += (Shadow * NoL) * MobileDirectionalLight.DirectionalLightColor.rgb * DiffuseColor;
 		#else
-			Color += (Shadow * NoL) * MobileDirectionalLight.DirectionalLightColor.rgb * (DiffuseColor + SpecularColor * PhongApprox(Roughness, RoL));
+			#if MATERIAL_SHADINGMODEL_TOON
+				Color += (Shadow * NoL) * MobileDirectionalLight.DirectionalLightColor.rgb * (DiffuseColor + SpecularColor * D_Toon_Flat(Roughness, 0.1f, RoL));
+			#else
+				Color += (Shadow * NoL) * MobileDirectionalLight.DirectionalLightColor.rgb * (DiffuseColor + SpecularColor * PhongApprox(Roughness, RoL));
+			#endif
 			// Environment map has been prenormalized, scale by lightmap luminance
 			half3 SpecularIBL = GetImageBasedReflectionLighting(MaterialParameters, Roughness) * IndirectIrradiance;
 			#if MATERIAL_PLANAR_FORWARD_REFLECTIONS

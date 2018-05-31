@@ -414,6 +414,10 @@ public:
 	UPROPERTY()
 	FScalarMaterialInput ClearCoatRoughness;
 
+	/**  */
+	UPROPERTY()
+	FScalarMaterialInput ToonStepSize;
+
 	/** output ambient occlusion to the GBuffer */
 	UPROPERTY()
 	FScalarMaterialInput AmbientOcclusion;

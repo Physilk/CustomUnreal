@@ -557,7 +557,7 @@ public:
 			Chunk[MP_OpacityMask]					= Material->CompilePropertyAndSetMaterialProperty(MP_OpacityMask			,this);
 			Chunk[MP_WorldPositionOffset]			= Material->CompilePropertyAndSetMaterialProperty(MP_WorldPositionOffset	,this);
 			Chunk[MP_WorldDisplacement]				= Material->CompilePropertyAndSetMaterialProperty(MP_WorldDisplacement		,this);
-			Chunk[MP_TessellationMultiplier]		= Material->CompilePropertyAndSetMaterialProperty(MP_TessellationMultiplier	,this);			
+			Chunk[MP_TessellationMultiplier]		= Material->CompilePropertyAndSetMaterialProperty(MP_TessellationMultiplier	,this);
 
 			if (Domain == MD_Surface && IsSubsurfaceShadingModel(MaterialShadingModel))
 			{
@@ -577,6 +577,7 @@ public:
 
 			Chunk[MP_CustomData0]					= Material->CompilePropertyAndSetMaterialProperty(MP_CustomData0		,this);
 			Chunk[MP_CustomData1]					= Material->CompilePropertyAndSetMaterialProperty(MP_CustomData1		,this);
+			Chunk[MP_CustomData2]					= Material->CompilePropertyAndSetMaterialProperty(MP_CustomData2		,this);
 			Chunk[MP_AmbientOcclusion]				= Material->CompilePropertyAndSetMaterialProperty(MP_AmbientOcclusion	,this);
 
 			if (IsTranslucentBlendMode(BlendMode))
@@ -1154,6 +1155,7 @@ public:
 		LazyPrintf.PushParam(*GenerateFunctionCode(MP_TessellationMultiplier));
 		LazyPrintf.PushParam(*GenerateFunctionCode(MP_CustomData0));
 		LazyPrintf.PushParam(*GenerateFunctionCode(MP_CustomData1));
+		LazyPrintf.PushParam(*GenerateFunctionCode(MP_CustomData2));
 
 		// Print custom texture coordinate assignments
 		FString CustomUVAssignments;

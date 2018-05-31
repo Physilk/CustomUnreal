@@ -3226,7 +3226,7 @@ void UMaterial::Serialize(FArchive& Ar)
 	}
 #endif // #if WITH_EDITOR
 
-	static_assert(MP_MAX == 29, "New material properties must have DoMaterialAttributesReorder called on them to ensure that any future reordering of property pins is correctly applied.");
+	static_assert(MP_MAX == 30, "New material properties must have DoMaterialAttributesReorder called on them to ensure that any future reordering of property pins is correctly applied.");
 
 	if (Ar.UE4Ver() < VER_UE4_MATERIAL_MASKED_BLENDMODE_TIDY)
 	{
@@ -3465,6 +3465,7 @@ void UMaterial::PostLoad()
 	DoMaterialAttributeReorder(&CustomizedUVs[6], UE4Ver);
 	DoMaterialAttributeReorder(&CustomizedUVs[7], UE4Ver);
 	DoMaterialAttributeReorder(&PixelDepthOffset, UE4Ver);
+	DoMaterialAttributeReorder(&ToonStepSize, UE4Ver);
 #endif // WITH_EDITORONLY_DATA
 
 	if (!IsDefaultMaterial())
@@ -4681,6 +4682,7 @@ FExpressionInput* UMaterial::GetExpressionInputForProperty(EMaterialProperty InP
 		case MP_SubsurfaceColor:		return &SubsurfaceColor;
 		case MP_CustomData0:			return &ClearCoat;
 		case MP_CustomData1:			return &ClearCoatRoughness;
+		case MP_CustomData2:			return &ToonStepSize;
 		case MP_AmbientOcclusion:		return &AmbientOcclusion;
 		case MP_Refraction:				return &Refraction;
 		case MP_MaterialAttributes:		return &MaterialAttributes;
@@ -5110,6 +5112,7 @@ int32 UMaterial::CompilePropertyEx( FMaterialCompiler* Compiler, const FGuid& At
 		case MP_TessellationMultiplier:	return TessellationMultiplier.CompileWithDefault(Compiler, Property);
 		case MP_CustomData0:			return ClearCoat.CompileWithDefault(Compiler, Property);
 		case MP_CustomData1:			return ClearCoatRoughness.CompileWithDefault(Compiler, Property);
+		case MP_CustomData2:			return ToonStepSize.CompileWithDefault(Compiler, Property);
 		case MP_AmbientOcclusion:		return AmbientOcclusion.CompileWithDefault(Compiler, Property);
 		case MP_Refraction:				return Refraction.CompileWithDefault(Compiler, Property);
 		case MP_EmissiveColor:			return EmissiveColor.CompileWithDefault(Compiler, Property);
@@ -5463,10 +5466,13 @@ bool UMaterial::IsPropertyActive(EMaterialProperty InProperty) const
 		Active = ShadingModel == MSM_Subsurface || ShadingModel == MSM_PreintegratedSkin || ShadingModel == MSM_TwoSidedFoliage || ShadingModel == MSM_Cloth;
 		break;
 	case MP_CustomData0:
-		Active = ShadingModel == MSM_ClearCoat || ShadingModel == MSM_Hair || ShadingModel == MSM_Cloth || ShadingModel == MSM_Eye;
+		Active = ShadingModel == MSM_ClearCoat || ShadingModel == MSM_Hair || ShadingModel == MSM_Cloth || ShadingModel == MSM_Eye || ShadingModel == MSM_Toon;
 		break;
 	case MP_CustomData1:
-		Active = ShadingModel == MSM_ClearCoat || ShadingModel == MSM_Eye;
+		Active = ShadingModel == MSM_ClearCoat || ShadingModel == MSM_Eye || ShadingModel == MSM_Toon;
+		break;
+	case MP_CustomData2:
+		Active = ShadingModel == MSM_Toon;
 		break;
 	case MP_TessellationMultiplier:
 	case MP_WorldDisplacement:

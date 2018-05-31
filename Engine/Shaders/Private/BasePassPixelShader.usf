@@ -866,6 +866,15 @@ void FPixelShaderInOut_MainPS(
 #endif
 #endif
 
+// Toon Shading edit
+#if MATERIAL_SHADINGMODEL_TOON
+	GBuffer.ShadingModelID = SHADINGMODELID_TOON;
+
+	float smoothness = GetMaterialCustomData0(MaterialParameters);
+
+	GBuffer.CustomData.x = smoothness;
+#endif
+
 #if MATERIAL_SHADINGMODEL_SUBSURFACE_PROFILE && USES_GBUFFER
 	// SubsurfaceProfile applies the BaseColor in a later pass. Any lighting output in the base pass needs
 	// to separate specualar and diffuse lighting in a checkerboard pattern
@@ -1016,7 +1025,7 @@ void FPixelShaderInOut_MainPS(
 #endif
 
 	// Volume lighting for lit translucency
-	#if (MATERIAL_SHADINGMODEL_DEFAULT_LIT || MATERIAL_SHADINGMODEL_SUBSURFACE) && (MATERIALBLENDING_TRANSLUCENT || MATERIALBLENDING_ADDITIVE) && !SIMPLE_FORWARD_SHADING && !FORWARD_SHADING
+	#if (MATERIAL_SHADINGMODEL_DEFAULT_LIT || MATERIAL_SHADINGMODEL_SUBSURFACE || MATERIAL_SHADINGMODEL_TOON) && (MATERIALBLENDING_TRANSLUCENT || MATERIALBLENDING_ADDITIVE) && !SIMPLE_FORWARD_SHADING && !FORWARD_SHADING
 		Color += GetTranslucencyVolumeLighting(MaterialParameters, PixelMaterialInputs, BasePassInterpolants, GBuffer, IndirectIrradiance);
 	#endif
 

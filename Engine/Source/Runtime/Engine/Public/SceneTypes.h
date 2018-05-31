@@ -161,6 +161,7 @@ enum EMaterialProperty
 	MP_CustomizedUVs6 UMETA(Hidden),
 	MP_CustomizedUVs7 UMETA(Hidden),
 	MP_PixelDepthOffset UMETA(Hidden),
+	MP_CustomData2 UMETA(Hidden),
 
 	//^^^ New material properties go above here ^^^^
 	MP_MaterialAttributes UMETA(Hidden),

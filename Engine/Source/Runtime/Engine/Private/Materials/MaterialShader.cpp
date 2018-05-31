@@ -68,6 +68,7 @@ FString GetShadingModelString(EMaterialShadingModel ShadingModel)
 		case MSM_TwoSidedFoliage:	ShadingModelName = TEXT("MSM_TwoSidedFoliage"); break;
 		case MSM_Cloth:				ShadingModelName = TEXT("MSM_Cloth"); break;
 		case MSM_Eye:				ShadingModelName = TEXT("MSM_Eye"); break;
+		case MSM_Toon:				ShadingModelName = TEXT("MSM_Toon"); break;
 		default: ShadingModelName = TEXT("Unknown"); break;
 	}
 	return ShadingModelName;
@@ -128,6 +129,7 @@ void UpdateMaterialShaderCompilingStats(const FMaterial* Material)
 		case MSM_Cloth:
 		case MSM_SubsurfaceProfile:
 		case MSM_TwoSidedFoliage:
+		case MSM_Toon:
 			INC_DWORD_STAT_BY(STAT_ShaderCompiling_NumLitMaterialShaders,1);
 			break;
 		default: break;
