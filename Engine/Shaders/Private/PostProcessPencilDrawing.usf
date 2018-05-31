@@ -1,0 +1,91 @@
+
+#include "/Engine/Public/Platform.ush"
+#include "/Engine/Private/MonteCarlo.ush"
+
+#include "Common.ush"
+#include "PostProcessCommon.ush"
+#include "DeferredShadingCommon.ush"
+
+#include "/Engine/Private/PostProcessCommon.ush"
+
+#define PI2 6.28318530717959
+
+#define RANGE 10
+#define STEP 2
+#define ANGLENUM 5
+
+#define MAGIC_GRAD_THRESH 0.01
+
+#define MAGIC_SENSITIVITY	4.
+
+
+float4 colorFromPixelCoord(float2 pos)
+{
+	float2 uv = pos / float2(View.ViewSizeAndInvSize.r, View.ViewSizeAndInvSize.g);
+    return Texture2DSample(PostprocessInput0, PostprocessInput0Sampler, uv);
+}
+
+float getVal(float2 pos)
+{
+    float4 c=colorFromPixelCoord(pos);
+    return dot(c.xyz, float3(0.2126, 0.7152, 0.0722));
+}
+
+float2 pR(float2 p, float a)
+{
+	return cos(a)*p + sin(a)*float2(p.y, -p.x);
+}
+
+float2 getGrad(float2 pos, float eps)
+{
+   	float2 d=float2(eps,0);
+    return float2(
+        getVal(pos+d.xy)-getVal(pos-d.xy),
+        getVal(pos+d.yx)-getVal(pos-d.yx)
+    )/eps/2;
+}
+
+void MainPencilPS(
+	noperspective float4 UVAndScreenPos : TEXCOORD0,
+	float4 SvPosition : SV_POSITION, 
+	out float4 OutColor : SV_Target0)
+{
+	float2 UV = UVAndScreenPos.xy;
+	int2 pos = (int2)SvPosition.xy;
+	int width = View.ViewSizeAndInvSize.r;
+	int height = View.ViewSizeAndInvSize.g;
+	float2 width_height = float2(width, height);
+	float4 col = Texture2DSample(PostprocessInput0, PostprocessInput0Sampler, UV);
+	
+	float weight = 1.0;
+	for (float j = 0; j < ANGLENUM; j += 1)
+	{
+		float2 dir = float2(1, 0);
+		dir = pR(dir, j * PI2 / (2 * ANGLENUM));
+		
+		float2 grad = float2(-dir.y, dir.x);
+		for (float i = -RANGE; i <= RANGE; i += STEP)
+        {
+			float2 pos2 = pos + normalize(dir) * i;
+			float mult = 1;
+			if (pos2.y < 0 || pos2.x < 0 || pos2.x > width || pos2.y > height)
+                mult = 0;
+			
+			float2 g = getGrad(pos2, 1);
+			if (length(g) < MAGIC_GRAD_THRESH)
+                mult = 0;
+			
+			//min needed to prevent hideous artifacts (floating point precision error??)
+			weight -= mult * min((pow(abs(dot(normalize(grad), normalize(g))), MAGIC_SENSITIVITY) / floor((2 * RANGE + 1) / STEP) / ANGLENUM), 10);
+		}
+	}
+	weight = saturate(weight);
+	
+	float r = length(pos - width_height * 0.5) / width;
+    float vign = 1 - r*r*r;
+    
+    float4 a = Texture2DSample(PostprocessInput0, PostprocessInput0Sampler, pos / width_height);
+    
+    float4 output = vign * lerp(float4(0, 0, 0, 0), col, weight) + a.xxxx / 25;
+    OutColor = output;
+}

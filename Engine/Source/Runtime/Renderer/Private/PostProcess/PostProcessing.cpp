@@ -42,6 +42,7 @@
 #include "PostProcess/PostProcessCompositeEditorPrimitives.h"
 #include "PostProcess/PostProcessEdgeDetection.h"
 #include "PostProcess/PostProcessTooning.h"
+#include "PostProcess/PostProcessPencilEffect.h"
 #include "CompositionLighting/PostProcessPassThrough.h"
 #include "PostProcess/PostProcessTestImage.h"
 #include "HighResScreenshot.h"
@@ -59,14 +60,20 @@
 /** The global center for all post processing activities. */
 FPostProcessing GPostProcessing;
 
+static TAutoConsoleVariable<int32> CVarUsePostProcessPencil(
+	TEXT("r.PencilEffect"),
+	0,
+	TEXT("Allows Edge detection postprocess"),
+	ECVF_RenderThreadSafe);
+
 static TAutoConsoleVariable<int32> CVarUsePostProcessEdge(
-	TEXT("r.UsePostProcessEdge"),
+	TEXT("r.EdgeDetection"),
 	0,
 	TEXT("Allows Edge detection postprocess"),
 	ECVF_RenderThreadSafe);
 
 static TAutoConsoleVariable<int32> CVarUsePostProcessTooning(
-	TEXT("r.UsePostProcessTooning"),
+	TEXT("r.TooningEffect"),
 	0,
 	TEXT("Allows tooning postprocess"),
 	ECVF_RenderThreadSafe);
@@ -1534,7 +1541,9 @@ void FPostProcessing::Process(FRHICommandListImmediate& RHICmdList, const FViewI
 				Context.FinalOutput = FRenderingCompositeOutputRef(Node);
 			}
 
-			
+
+			//------------------------------------------------------------
+			//------------------------------------------------------------
 
 			Context.FinalOutput = AddPostProcessMaterialChain(Context, BL_BeforeTonemapping, SeparateTranslucency);
 
@@ -2120,6 +2129,14 @@ void FPostProcessing::Process(FRHICommandListImmediate& RHICmdList, const FViewI
 		{
 			FSceneRenderTargets::Get(Context.RHICmdList).AdjustGBufferRefCount(Context.RHICmdList, 1);
 			FRenderingCompositePass* Node = Context.Graph.RegisterPass(new(FMemStack::Get()) FRCPassPostProcessVisualizeEdge());
+			Node->SetInput(ePId_Input0, FRenderingCompositeOutputRef(Context.FinalOutput));
+			Context.FinalOutput = FRenderingCompositeOutputRef(Node);
+		}
+
+		if (CVarUsePostProcessPencil.GetValueOnRenderThread() > 0)
+		{
+			FSceneRenderTargets::Get(Context.RHICmdList).AdjustGBufferRefCount(Context.RHICmdList, 1);
+			FRenderingCompositePass* Node = Context.Graph.RegisterPass(new(FMemStack::Get()) FRCPassPostProcessVisualizePencilEffect());
 			Node->SetInput(ePId_Input0, FRenderingCompositeOutputRef(Context.FinalOutput));
 			Context.FinalOutput = FRenderingCompositeOutputRef(Node);
 		}
