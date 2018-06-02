@@ -142,7 +142,7 @@ FPooledRenderTargetDesc FRCPassPostProcessVisualizePencilEffect::ComputeOutputDe
     Ret.Reset();
     Ret.TargetableFlags &= ~TexCreate_UAV;
     Ret.TargetableFlags |= TexCreate_RenderTargetable;
-    Ret.DebugName = TEXT("VisualizeEdge");
+    Ret.DebugName = TEXT("VisualizePencil");
 
     return Ret;
 }

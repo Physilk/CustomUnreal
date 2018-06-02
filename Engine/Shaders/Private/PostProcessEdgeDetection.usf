@@ -175,6 +175,7 @@ void MainEdgeDetectionPS(
 	float2 offsetScale_d = float2(0.5, 0.5);
 	float2 offset_d = View.ViewSizeAndInvSize.ba;
 	float depthThreshold = GetDepthThreshold(UV);
+	float depth = SceneDepthLookup(UV);
 	
 	float maxDepth = FindhighestDepthArround(UV, 5, 5, offset_d, offsetScale_d);
 #endif
@@ -193,7 +194,7 @@ void MainEdgeDetectionPS(
 	}
 #endif
 #if EDGE_DETECTION_USE_DEPTH
-	if (depthThreshold < edgeThreshold)
+	if (depth < 10000 && maxDepth > depthThreshold)
 	{
 		multValue = float4(0, 0, 0, 1);
 	}

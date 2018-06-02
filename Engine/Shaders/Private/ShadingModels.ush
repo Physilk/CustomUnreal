@@ -71,19 +71,36 @@ float3 StandardShading( float3 DiffuseColor, float3 SpecularColor, float3 LobeRo
 // Toon Shading addition
 float3 ToonShading( FGBufferData GBuffer, float3 LobeRoughness, float3 LobeEnergy, float3 L, float3 V, half3 N)
 {
-	// float range = GBuffer.CustomData.x * 0.5;
-	float HighlightSize = 0.5; // GBuffer.CustomData.y;
+
+	float HighlightSize = 0.5;
 	float3 H = normalize(V+L);
 	float NoH = saturate( dot(N, H) );
 	float NoL = saturate( dot(N, L) );
 
-	//return GBuffer.DiffuseColor + saturate(smoothstep(0.5 - range, 0.5 + range, D_GGX(LobeRoughness[1], NoH )) * LobeEnergy[1]);
+	
 	float Highlight = (NoH > (1 - GBuffer.Roughness)) ? 1 : 0;
 	float3 HighlightColor = ( Highlight * (1 - GBuffer.Roughness) ) * lerp(1, GBuffer.BaseColor, GBuffer.Metallic);
-	//float3 Diff =  lerp(GBuffer.CustomData.rgb, GBuffer.BaseColor, saturate( floor( NoL * GBuffer.CustomData.a ) / GBuffer.CustomData.a ));
-	float Diff = saturate( ceil( NoH));// saturate ( ceil ( NoL * 2 ) / 2 );
+	float Diff = saturate( ceil( NoH));
 	return saturate(GBuffer.BaseColor * Diff) + HighlightColor;
 }
+
+/*float3 ToonShading( FGBufferData GBuffer, float3 LobeRoughness, float3 LobeEnergy, float3 L, float3 V, half3 N)
+{
+	float3 H = normalize(V + L);
+	float NoL = saturate( dot(N, L) );
+	float NoV = saturate( abs( dot(N, V) ) + 1e-5 );
+	float NoH = saturate( dot(N, H) );
+	float VoH = saturate( dot(V, H) );
+
+	float D = LobeEnergy[1] * D_Toon_Flat(LobeRoughness[1], GBuffer.CustomData.y, NoH);
+
+	float Vis = Vis_SmithJointApprox( LobeRoughness[1], NoV, NoL );
+	float3 F = F_Schlick( GBuffer.SpecularColor, VoH );
+
+	float3 Diffuse = Diffuse_Lambert( GBuffer.DiffuseColor );
+	
+	return Diffuse * LobeEnergy[2] + (D * Vis) * F;
+}*/
 
 float3 SimpleShading( float3 DiffuseColor, float3 SpecularColor, float Roughness, float3 L, float3 V, half3 N )
 {
